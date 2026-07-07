@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GarageOS — Gestión de Garajes</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body>
+<div id="app">
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                <polyline points="9,22 9,12 15,12 15,22"/>
+            </svg>
+        </div>
+        <div class="sidebar-logo-text">
+            <strong>GarageOS</strong>
+            <span>Pro Edition</span>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Principal</div>
+        <div class="sidebar-item active" onclick="navigate('dashboard')" id="nav-dashboard">
+            <i data-lucide="layout-dashboard" class="sidebar-item-icon"></i>
+            <span class="sidebar-item-text">Dashboard</span>
+        </div>
+        <div class="sidebar-section-label" style="margin-top:8px">Gestión</div>
+        <div class="sidebar-item" onclick="navigate('garages')" id="nav-garages">
+            <i data-lucide="car" class="sidebar-item-icon"></i>
+            <span class="sidebar-item-text">Vehículos</span>
+            <span class="sidebar-badge" id="badge-garages">0</span>
+        </div>
+        <div class="sidebar-item" onclick="navigate('motorcycles')" id="nav-motorcycles">
+            <i data-lucide="bike" class="sidebar-item-icon"></i>
+            <span class="sidebar-item-text">Motocicletas</span>
+            <span class="sidebar-badge" id="badge-motorcycles">0</span>
+        </div>
+        <div class="sidebar-item" onclick="navigate('owners')" id="nav-owners">
+            <i data-lucide="users" class="sidebar-item-icon"></i>
+            <span class="sidebar-item-text">Propietarios</span>
+            <span class="sidebar-badge" id="badge-owners">0</span>
+        </div>
+        <div class="sidebar-item" onclick="navigate('spots')" id="nav-spots">
+            <i data-lucide="grid-3x3" class="sidebar-item-icon"></i>
+            <span class="sidebar-item-text">Plazas</span>
+        </div>
+        <div class="sidebar-section-label" style="margin-top:8px">Herramientas</div>
+        <div class="sidebar-item" onclick="navigate('search')" id="nav-search">
+            <i data-lucide="search" class="sidebar-item-icon"></i>
+            <span class="sidebar-item-text">Buscador</span>
+        </div>
+        <div class="sidebar-item" onclick="navigate('stats')" id="nav-stats">
+            <i data-lucide="bar-chart-3" class="sidebar-item-icon"></i>
+            <span class="sidebar-item-text">Estadísticas</span>
+        </div>
+        <div class="sidebar-section-label" style="margin-top:8px">Sistema</div>
+        <div class="sidebar-item" onclick="navigate('settings')" id="nav-settings">
+            <i data-lucide="settings" class="sidebar-item-icon"></i>
+            <span class="sidebar-item-text">Configuración</span>
+        </div>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="sidebar-user" onclick="openAdminModal()" title="Editar perfil del administrador">
+            <div class="sidebar-avatar" id="sidebar-avatar">AG</div>
+            <div class="sidebar-user-info">
+                <p id="sidebar-user-name">Admin García</p>
+                <span id="sidebar-user-role">Administrador</span>
+            </div>
+            <div class="sidebar-user-edit">
+                <i data-lucide="edit-2" style="width:13px;height:13px;"></i>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<div class="main-wrapper">
+    <header class="topbar">
+        <div class="topbar-toggle" onclick="toggleSidebar()">
+            <i data-lucide="menu" style="width:18px;height:18px;"></i>
+        </div>
+        <div class="topbar-breadcrumb">
+            <span>GarageOS</span>
+            <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+            <strong id="breadcrumb-current">Dashboard</strong>
+        </div>
+        <div class="topbar-search">
+            <i data-lucide="search" class="topbar-search-icon" style="width:15px;height:15px;"></i>
+            <input type="text" placeholder="Buscar matrícula, propietario, edificio…" oninput="globalSearch(this.value)">
+        </div>
+        <div class="topbar-actions">
+            <button class="topbar-btn" onclick="toggleDark()" id="dark-btn">
+                <i data-lucide="moon" style="width:17px;height:17px;"></i>
+            </button>
+            <button class="btn btn-primary" onclick="openAddModal()">
+                <i data-lucide="plus" style="width:14px;height:14px;"></i> Añadir
+            </button>
+        </div>
+    </header>
+
+    <main class="page-content">
+
+        <!-- ── DASHBOARD ── -->
+        <div class="page active" id="page-dashboard">
+            <div class="page-header">
+                <div><h1 class="page-title">Dashboard</h1><p class="page-subtitle">Resumen general de la comunidad de propietarios</p></div>
+            </div>
+            <div class="kpi-grid" id="kpi-grid"></div>
+            <div class="chart-grid">
+                <div class="chart-card col-7">
+                    <div class="chart-title">Evolución de Ocupación</div>
+                    <div class="chart-subtitle">Plazas ocupadas en 2024</div>
+                    <div style="height:210px"><canvas id="chart-line"></canvas></div>
+                </div>
+                <div class="chart-card col-5">
+                    <div class="chart-title">Estado Actual</div>
+                    <div class="chart-subtitle">Distribución por estado</div>
+                    <div style="height:170px;display:flex;justify-content:center"><canvas id="chart-donut"></canvas></div>
+                    <div id="donut-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;justify-content:center"></div>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-card col-8">
+                    <div class="chart-title">Ocupación por Edificio / Portal</div>
+                    <div class="chart-subtitle">SCL, PCA y PCO</div>
+                    <div style="height:195px"><canvas id="chart-portals"></canvas></div>
+                </div>
+                <div class="chart-card col-4">
+                    <div class="chart-title">Actividad Reciente</div>
+                    <div id="activity-list" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;max-height:195px;overflow-y:auto;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── VEHÍCULOS ── -->
+        <div class="page" id="page-garages">
+            <div class="page-header">
+                <div><h1 class="page-title">Vehículos</h1><p class="page-subtitle" id="vehicles-subtitle">Cargando…</p></div>
+                <div class="flex gap-2">
+                    <button class="btn btn-secondary btn-sm" onclick="selectAllVisible('vehicles')">
+                        <i data-lucide="check-square" style="width:13px;height:13px;"></i> Sel. todo
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="openAddModal('vehicle')">
+                        <i data-lucide="plus" style="width:13px;height:13px;"></i> Añadir
+                    </button>
+                </div>
+            </div>
+            <div class="filter-bar">
+                <div class="filter-chip active" onclick="setVehiclesFilter('all',this)">Todos</div>
+                <div class="filter-chip" onclick="setVehiclesFilter('occupied',this)">Ocupadas</div>
+                <div class="filter-chip" onclick="setVehiclesFilter('free',this)">Libres</div>
+                <div class="filter-chip" onclick="setVehiclesFilter('reserved',this)">Reservadas</div>
+            </div>
+            <div class="table-card">
+                <div class="table-toolbar">
+                    <div class="table-toolbar-left">
+                        <div class="search-box">
+                            <i data-lucide="search" class="search-icon" style="width:14px;height:14px;"></i>
+                            <input type="text" placeholder="Buscar vehículo…" oninput="onVehiclesSearch(this.value)">
+                        </div>
+                        <select class="filter-select" onchange="onVehiclesPortal(this.value)" id="veh-portal-sel">
+                            <option value="">Todos los edificios</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="bulk-bar-vehicles" style="display:none">
+                    <div class="bulk-bar">
+                        <i data-lucide="check-square" style="width:16px;height:16px;color:var(--accent-primary);flex-shrink:0"></i>
+                        <span class="bulk-bar-count" id="bulk-count-vehicles">0 seleccionados</span>
+                        <div class="bulk-bar-sep"></div>
+                        <button class="btn btn-danger btn-sm" onclick="bulkDelete('vehicles')">
+                            <i data-lucide="trash-2" style="width:12px;height:12px;"></i> Eliminar seleccionados
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearSelection('vehicles')">
+                            <i data-lucide="x" style="width:12px;height:12px;"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-col">
+                                <div class="cb" id="cb-all-vehicles" onclick="toggleSelectAll('vehicles')" style="margin:auto">
+                                    <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-5" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </div>
+                            </th>
+                            <th>Plaza</th><th>Edificio</th><th>Propietario</th>
+                            <th>Vehículo</th><th>Matrícula</th><th>Color</th><th>Estado</th><th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehicles-tbody"></tbody>
+                </table>
+                <div class="table-pagination">
+                    <span class="pagination-info" id="vehicles-pg-info"></span>
+                    <div class="pagination-controls" id="vehicles-pg-controls"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MOTOCICLETAS ── -->
+        <div class="page" id="page-motorcycles">
+            <div class="page-header">
+                <div><h1 class="page-title">Motocicletas</h1><p class="page-subtitle">Selecciona una o varias para editar o eliminar</p></div>
+                <div class="flex gap-2">
+                    <button class="btn btn-secondary btn-sm" onclick="selectAllVisible('motorcycles')">
+                        <i data-lucide="check-square" style="width:13px;height:13px;"></i> Sel. todo
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="openAddModal('motorcycle')">
+                        <i data-lucide="plus" style="width:13px;height:13px;"></i> Añadir Moto
+                    </button>
+                </div>
+            </div>
+            <div class="table-card">
+                <div class="table-toolbar">
+                    <div class="table-toolbar-left">
+                        <div class="search-box">
+                            <i data-lucide="search" class="search-icon" style="width:14px;height:14px;"></i>
+                            <input type="text" placeholder="Buscar moto…" oninput="onMotosSearch(this.value)">
+                        </div>
+                        <select class="filter-select" onchange="onMotosPortal(this.value)" id="mot-portal-sel">
+                            <option value="">Todos los edificios</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="bulk-bar-motorcycles" style="display:none">
+                    <div class="bulk-bar" style="background:var(--accent-purple-light);border-bottom-color:var(--accent-purple)">
+                        <i data-lucide="check-square" style="width:16px;height:16px;color:var(--accent-purple);flex-shrink:0"></i>
+                        <span class="bulk-bar-count" id="bulk-count-motorcycles" style="color:var(--accent-purple)">0 seleccionadas</span>
+                        <div class="bulk-bar-sep" style="background:var(--accent-purple)"></div>
+                        <button class="btn btn-danger btn-sm" onclick="bulkDelete('motorcycles')">
+                            <i data-lucide="trash-2" style="width:12px;height:12px;"></i> Eliminar seleccionadas
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearSelection('motorcycles')">
+                            <i data-lucide="x" style="width:12px;height:12px;"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-col">
+                                <div class="cb" id="cb-all-motorcycles" onclick="toggleSelectAll('motorcycles')" style="margin:auto">
+                                    <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-5" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </div>
+                            </th>
+                            <th>Plaza</th><th>Edificio</th><th>Propietario</th>
+                            <th>Marca</th><th>Modelo</th><th>Matrícula</th><th>Estado</th><th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="motorcycles-tbody"></tbody>
+                </table>
+                <div class="table-pagination">
+                    <span class="pagination-info" id="motos-pg-info"></span>
+                    <div class="pagination-controls" id="motos-pg-controls"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PROPIETARIOS ── -->
+        <div class="page" id="page-owners">
+            <div class="page-header">
+                <div><h1 class="page-title">Propietarios</h1><p class="page-subtitle" id="owners-subtitle">Directorio de vecinos y titulares</p></div>
+                <div class="flex gap-2">
+                    <button class="btn btn-secondary btn-sm" onclick="selectAllOwners()">
+                        <i data-lucide="check-square" style="width:13px;height:13px;"></i> Sel. todo
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="openAddOwnerModal()">
+                        <i data-lucide="user-plus" style="width:13px;height:13px;"></i> Añadir Propietario
+                    </button>
+                </div>
+            </div>
+            <div class="table-card" style="margin-bottom:16px">
+                <div class="table-toolbar" style="border-bottom:none">
+                    <div class="table-toolbar-left">
+                        <div class="search-box">
+                            <i data-lucide="search" class="search-icon" style="width:14px;height:14px;"></i>
+                            <input type="text" placeholder="Buscar propietario…" oninput="onOwnersSearch(this.value)">
+                        </div>
+                        <select class="filter-select" onchange="onOwnersPortal(this.value)" id="own-portal-sel">
+                            <option value="">Todos los edificios</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="bulk-bar-owners" style="display:none;margin-bottom:16px">
+                <div class="bulk-bar" style="background:var(--accent-orange-light);border:1px solid var(--accent-orange);border-radius:var(--radius-lg)">
+                    <i data-lucide="users" style="width:16px;height:16px;color:var(--accent-orange);flex-shrink:0"></i>
+                    <span class="bulk-bar-count" id="bulk-count-owners" style="color:var(--accent-orange)">0 seleccionados</span>
+                    <div class="bulk-bar-sep" style="background:var(--accent-orange)"></div>
+                    <button class="btn btn-danger btn-sm" onclick="bulkDelete('owners')">
+                        <i data-lucide="trash-2" style="width:12px;height:12px;"></i> Eliminar seleccionados
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="clearSelection('owners')">
+                        <i data-lucide="x" style="width:12px;height:12px;"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+            <div class="owners-grid" id="owners-grid"></div>
+            <div class="table-pagination" id="owners-pagination" style="background:var(--bg-card);border:1px solid var(--border-primary);border-radius:var(--radius-lg);margin-top:16px;display:flex">
+                <span class="pagination-info" id="owners-pg-info"></span>
+                <div class="pagination-controls" id="owners-pg-controls"></div>
+            </div>
+        </div>
+
+        <!-- ── PLAZAS ── -->
+        <div class="page" id="page-spots">
+            <div class="page-header">
+                <div><h1 class="page-title">Mapa de Plazas</h1><p class="page-subtitle">Vista interactiva por edificio</p></div>
+                <select class="filter-select" onchange="filterFloor(this.value)" id="spots-portal-sel">
+                    <option value="">Todos los edificios</option>
+                </select>
+            </div>
+            <div class="floor-plan">
+                <div class="floor-legend">
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-green)"></div>Libre</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-red)"></div>Ocupada</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-orange)"></div>Reservada</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--accent-purple);border-radius:50%"></div>Moto</div>
+                </div>
+                <div class="floor-grid" id="floor-grid"></div>
+            </div>
+        </div>
+
+        <!-- ── BUSCADOR ── -->
+        <div class="page" id="page-search">
+            <div class="page-header">
+                <div><h1 class="page-title">Buscador Inteligente</h1><p class="page-subtitle">Búsqueda en tiempo real en todos los registros</p></div>
+            </div>
+            <div class="table-card" style="padding:24px;margin-bottom:20px">
+                <input type="text" id="smart-search-input" class="form-input" style="height:46px;font-size:15px" placeholder="Nombre, matrícula, edificio, DNI, teléfono…" oninput="smartSearch(this.value)">
+            </div>
+            <div id="search-results"></div>
+        </div>
+
+        <!-- ── ESTADÍSTICAS ── -->
+        <div class="page" id="page-stats">
+            <div class="page-header">
+                <div><h1 class="page-title">Estadísticas</h1><p class="page-subtitle">Análisis de ocupación y gestión</p></div>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-card col-6">
+                    <div class="chart-title">Plazas por Edificio</div>
+                    <div style="height:250px;margin-top:10px"><canvas id="stats-chart"></canvas></div>
+                </div>
+                <div class="chart-card col-6">
+                    <div class="chart-title">Resumen del Sistema</div>
+                    <div id="stats-summary" style="margin-top:14px"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── CONFIGURACIÓN ── -->
+        <div class="page" id="page-settings">
+            <div class="page-header">
+                <div><h1 class="page-title">Configuración</h1><p class="page-subtitle">Personaliza GarageOS y gestiona el perfil del administrador</p></div>
+            </div>
+
+            <!-- ADMIN PROFILE CARD -->
+            <div class="admin-profile-card" id="admin-profile-card">
+                <div style="display:flex;align-items:center;gap:18px;position:relative;z-index:1">
+                    <div class="admin-avatar-lg" id="cfg-avatar-display">AG</div>
+                    <div style="flex:1;min-width:0">
+                        <div class="admin-card-name" id="cfg-card-name">Admin García</div>
+                        <div class="admin-card-role" id="cfg-card-role">Administrador Principal</div>
+                        <div class="admin-card-meta" id="cfg-card-meta"></div>
+                    </div>
+                    <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(8px);flex-shrink:0" onclick="openAdminModal()">
+                        <i data-lucide="edit-2" style="width:12px;height:12px;"></i> Editar perfil
+                    </button>
+                </div>
+            </div>
+
+            <!-- APPEARANCE -->
+            <div class="settings-section">
+                <div class="settings-section-header">
+                    <div class="settings-icon" style="background:var(--accent-orange-light)">
+                        <i data-lucide="palette" style="width:18px;height:18px;color:var(--accent-orange)"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:14px">Apariencia</div>
+                        <div style="font-size:12px;color:var(--text-secondary)">Ajusta el aspecto visual de la aplicación</div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div style="font-weight:600">Modo Oscuro</div>
+                        <div style="font-size:12px;color:var(--text-secondary)">Cambia la interfaz al tema oscuro</div>
+                    </div>
+                    <div class="toggle-switch" id="dark-toggle-settings" onclick="toggleDark()"></div>
+                </div>
+            </div>
+
+            <!-- PORTALS CONFIG -->
+            <div class="settings-section">
+                <div class="settings-section-header">
+                    <div class="settings-icon" style="background:var(--accent-blue-light)">
+                        <i data-lucide="building-2" style="width:18px;height:18px;color:var(--accent-blue)"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:14px">Edificios y Portales</div>
+                        <div style="font-size:12px;color:var(--text-secondary)">Portales configurados en el sistema</div>
+                    </div>
+                </div>
+                <div style="padding:20px">
+                    <div id="portals-list" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+</div>
+
+<!-- ═══ MODAL ADMIN PERFIL (COMPLETO) ═══ -->
+<div class="modal-overlay" id="admin-modal" onclick="closeAdminOnBg(event)">
+    <div class="modal" style="max-width:700px">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">Perfil del Administrador</div>
+                <div class="modal-subtitle">Información completa del administrador del sistema</div>
+            </div>
+            <button class="modal-close" onclick="closeAdminModal()"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+        </div>
+        <!-- Tabs -->
+        <div class="modal-tabs">
+            <div class="modal-tab active" onclick="switchAdminTab(this,'atab-personal')">Datos Personales</div>
+            <div class="modal-tab" onclick="switchAdminTab(this,'atab-contact')">Contacto</div>
+            <div class="modal-tab" onclick="switchAdminTab(this,'atab-company')">Empresa / Comunidad</div>
+            <div class="modal-tab" onclick="switchAdminTab(this,'atab-security')">Seguridad</div>
+        </div>
+        <div class="modal-body">
+
+            <!-- TAB: PERSONAL -->
+            <div id="atab-personal">
+                <div class="form-section-title">
+                    <i data-lucide="user" style="width:14px;height:14px;color:var(--accent-primary)"></i>
+                    Información Personal
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Nombre *</label>
+                        <input type="text" class="form-input" id="adm-nombre" placeholder="Nombre">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Apellidos</label>
+                        <input type="text" class="form-input" id="adm-apellidos" placeholder="Apellidos">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cargo / Rol *</label>
+                        <input type="text" class="form-input" id="adm-role" placeholder="Administrador de Fincas…">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DNI / NIF</label>
+                        <input type="text" class="form-input" id="adm-dni" placeholder="12345678A">
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Número de colegiado</label>
+                        <input type="text" class="form-input" id="adm-colegiado" placeholder="Nº colegiado (si aplica)">
+                    </div>
+                </div>
+
+                <div class="form-section-title" style="margin-top:20px">
+                    <i data-lucide="map-pin" style="width:14px;height:14px;color:var(--accent-primary)"></i>
+                    Dirección
+                </div>
+                <div class="form-grid">
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Calle y número</label>
+                        <input type="text" class="form-input" id="adm-direccion" placeholder="Calle Mayor, 15">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Código Postal</label>
+                        <input type="text" class="form-input" id="adm-cp" placeholder="28001">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Localidad</label>
+                        <input type="text" class="form-input" id="adm-ciudad" placeholder="Madrid">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Provincia</label>
+                        <input type="text" class="form-input" id="adm-provincia" placeholder="Madrid">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">País</label>
+                        <input type="text" class="form-input" id="adm-pais" placeholder="España">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: CONTACT -->
+            <div id="atab-contact" style="display:none">
+                <div class="form-section-title">
+                    <i data-lucide="phone" style="width:14px;height:14px;color:var(--accent-green)"></i>
+                    Datos de Contacto
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Teléfono principal</label>
+                        <input type="tel" class="form-input" id="adm-tel1" placeholder="600 000 000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Teléfono secundario</label>
+                        <input type="tel" class="form-input" id="adm-tel2" placeholder="91 000 00 00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fax</label>
+                        <input type="tel" class="form-input" id="adm-fax" placeholder="91 000 00 00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">WhatsApp</label>
+                        <input type="tel" class="form-input" id="adm-whatsapp" placeholder="600 000 000">
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Correo electrónico principal *</label>
+                        <input type="email" class="form-input" id="adm-email1" placeholder="admin@comunidad.es">
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Correo electrónico secundario</label>
+                        <input type="email" class="form-input" id="adm-email2" placeholder="info@empresa.es">
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Página web</label>
+                        <input type="url" class="form-input" id="adm-web" placeholder="https://www.administracion.es">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">LinkedIn</label>
+                        <input type="url" class="form-input" id="adm-linkedin" placeholder="https://linkedin.com/in/…">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Horario de atención</label>
+                        <input type="text" class="form-input" id="adm-horario" placeholder="Lun–Vie 09:00–18:00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: COMPANY -->
+            <div id="atab-company" style="display:none">
+                <div class="form-section-title">
+                    <i data-lucide="building" style="width:14px;height:14px;color:var(--accent-blue)"></i>
+                    Datos de la Empresa / Comunidad
+                </div>
+                <div class="form-grid">
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Nombre de la empresa / gestoría</label>
+                        <input type="text" class="form-input" id="adm-empresa" placeholder="Administración de Fincas García S.L.">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CIF / NIF empresa</label>
+                        <input type="text" class="form-input" id="adm-cif" placeholder="B12345678">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nº de Registro Mercantil</label>
+                        <input type="text" class="form-input" id="adm-registro" placeholder="Registro Mercantil…">
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Nombre de la comunidad gestionada</label>
+                        <input type="text" class="form-input" id="adm-comunidad" placeholder="Comunidad Las Flores">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CIF de la comunidad</label>
+                        <input type="text" class="form-input" id="adm-com-cif" placeholder="H12345678">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Año de constitución</label>
+                        <input type="text" class="form-input" id="adm-anio" placeholder="2005">
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Banco / Entidad financiera</label>
+                        <input type="text" class="form-input" id="adm-banco" placeholder="Banco Santander · IBAN ES00 0000 0000 0000 0000 0000">
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Seguro de Responsabilidad Civil</label>
+                        <input type="text" class="form-input" id="adm-seguro" placeholder="Mutua / Nº póliza">
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Notas internas / Observaciones</label>
+                        <textarea class="form-textarea" id="adm-notas" placeholder="Información adicional relevante…" style="min-height:80px"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: SECURITY -->
+            <div id="atab-security" style="display:none">
+                <div class="form-section-title">
+                    <i data-lucide="shield" style="width:14px;height:14px;color:var(--accent-red)"></i>
+                    Seguridad y Acceso
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Rol del sistema</label>
+                        <select class="form-select" id="adm-sys-role">
+                            <option value="admin">Administrador completo</option>
+                            <option value="gestor">Gestor</option>
+                            <option value="readonly">Solo lectura</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Idioma</label>
+                        <select class="form-select" id="adm-idioma">
+                            <option value="es">Español</option>
+                            <option value="ca">Català</option>
+                            <option value="eu">Euskera</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Contraseña nueva (dejar en blanco para no cambiar)</label>
+                        <input type="password" class="form-input" id="adm-pass1" placeholder="••••••••••">
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Confirmar contraseña</label>
+                        <input type="password" class="form-input" id="adm-pass2" placeholder="••••••••••">
+                    </div>
+                </div>
+                <div class="form-section-title" style="margin-top:20px">
+                    <i data-lucide="activity" style="width:14px;height:14px;color:var(--accent-orange)"></i>
+                    Sesión Actual
+                </div>
+                <div style="background:var(--bg-secondary);border-radius:var(--radius-lg);padding:16px">
+                    <div class="info-row"><span class="info-label">Último acceso</span><span class="info-value">Hoy, 09:14</span></div>
+                    <div class="info-row"><span class="info-label">IP</span><span class="info-value">192.168.1.45</span></div>
+                    <div class="info-row"><span class="info-label">Dispositivo</span><span class="info-value">Chrome / Windows</span></div>
+                    <div class="info-row"><span class="info-label">Sesiones activas</span><span class="info-value">1</span></div>
+                </div>
+                <div style="margin-top:16px;display:flex;gap:8px">
+                    <button class="btn btn-secondary btn-sm" onclick="showToast('warning','Sesiones','Todas las sesiones han sido cerradas.')">
+                        <i data-lucide="log-out" style="width:12px;height:12px;"></i> Cerrar todas las sesiones
+                    </button>
+                </div>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeAdminModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveAdmin()">
+                <i data-lucide="save" style="width:13px;height:13px;"></i> Guardar Perfil
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL SPOT ═══ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBg(event)">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title" id="modal-title">Registro</div>
+                <div class="modal-subtitle" id="modal-subtitle">Introduce los datos</div>
+            </div>
+            <button class="modal-close" onclick="closeModal()"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-section-title">Ubicación</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Nº Plaza *</label>
+                    <input type="text" class="form-input" id="f-plaza" placeholder="G-001">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-select" id="f-tipo">
+                        <option value="car">Garaje (Coche)</option>
+                        <option value="moto">Motocicleta</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Edificio / Portal</label>
+                    <select class="form-select" id="f-portal"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Estado</label>
+                    <select class="form-select" id="f-estado">
+                        <option value="free">Libre</option>
+                        <option value="occupied">Ocupada</option>
+                        <option value="reserved">Reservada</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-section-title">Propietario</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Nombre completo</label>
+                    <input type="text" class="form-input" id="f-owner" placeholder="Nombre Apellidos">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Teléfono</label>
+                    <input type="text" class="form-input" id="f-tel" placeholder="600 000 000">
+                </div>
+            </div>
+            <div class="form-section-title">Vehículo</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Marca</label>
+                    <input type="text" class="form-input" id="f-marca" placeholder="BMW, Seat…">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Modelo</label>
+                    <input type="text" class="form-input" id="f-modelo" placeholder="Golf, Ibiza…">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Matrícula</label>
+                    <input type="text" class="form-input" id="f-matricula" placeholder="1234 ABC">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <input type="text" class="form-input" id="f-color" placeholder="Blanco, Negro…">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveRecord()">
+                <i data-lucide="save" style="width:13px;height:13px;"></i> Guardar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL PROPIETARIO ═══ -->
+<div class="modal-overlay" id="owner-modal-overlay" onclick="closeOwnerModalOnBg(event)">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title" id="owner-modal-title">Añadir Propietario</div>
+                <div class="modal-subtitle" id="owner-modal-subtitle">Datos del propietario</div>
+            </div>
+            <button class="modal-close" onclick="closeOwnerModal()"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Nombre *</label>
+                    <input type="text" class="form-input" id="ow-nombre" placeholder="Nombre">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Apellidos *</label>
+                    <input type="text" class="form-input" id="ow-apellidos" placeholder="Apellidos">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">DNI / NIF</label>
+                    <input type="text" class="form-input" id="ow-dni" placeholder="12345678A">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Teléfono</label>
+                    <input type="text" class="form-input" id="ow-tel" placeholder="600 000 000">
+                </div>
+                <div class="form-group col-span-2">
+                    <label class="form-label">Email</label>
+                    <input type="text" class="form-input" id="ow-email" placeholder="correo@ejemplo.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Edificio / Portal</label>
+                    <select class="form-select" id="ow-portal"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Vivienda</label>
+                    <input type="text" class="form-input" id="ow-vivienda" placeholder="3ºB">
+                </div>
+                <div class="form-group col-span-2">
+                    <label class="form-label">Observaciones</label>
+                    <textarea class="form-textarea" id="ow-obs" placeholder="Notas…"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeOwnerModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveOwner()">
+                <i data-lucide="save" style="width:13px;height:13px;"></i> Guardar Propietario
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel" id="detail-panel">
+    <div class="detail-panel-header">
+        <div>
+            <div class="modal-title" id="detail-title">Detalle</div>
+            <div class="modal-subtitle" id="detail-subtitle"></div>
+        </div>
+        <button class="modal-close" onclick="closeDetailPanel()"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+    </div>
+    <div class="detail-panel-body" id="detail-body"></div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+        <div class="confirm-icon" style="background:var(--accent-red-light)">
+            <i data-lucide="trash-2" style="width:22px;height:22px;color:var(--accent-red)"></i>
+        </div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:8px" id="confirm-title">¿Confirmar eliminación?</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;line-height:1.6" id="confirm-msg"></div>
+        <div class="flex gap-2" style="justify-content:flex-end">
+            <button class="btn btn-ghost" onclick="closeConfirm()">Cancelar</button>
+            <button class="btn btn-danger" onclick="executeConfirm()">
+                <i data-lucide="trash-2" style="width:13px;height:13px;"></i> Eliminar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/database.js"></script>
+<script src="js/app.js"></script>
+
+const supabase = window.supabase.createClient(
+    "https://lmxtcxjlhwwmaylszvoa.supabase.co",
+    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxteHRjeGpsaHd3bWF5bHN6dm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MjQ1MzgsImV4cCI6MjA5OTAwMDUzOH0.NCqn0WF_o6ZbjCXJAi3eG8WmfAkHktBR8eP2W3TEXeY
+);
+</body>
+</html>
