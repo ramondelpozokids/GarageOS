@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 0bdbf2764b6fb53ec7cf99fffb1309ae82c831e7 Ramon <ramon55555@gmail.com> 1783431026 +0200	commit (initial): GarageOS inicial
+0bdbf2764b6fb53ec7cf99fffb1309ae82c831e7 0bdbf2764b6fb53ec7cf99fffb1309ae82c831e7 Ramon <ramon55555@gmail.com> 1783431026 +0200	Branch: renamed refs/heads/master to refs/heads/main
+0bdbf2764b6fb53ec7cf99fffb1309ae82c831e7 d6a74cc1799f29e05cb44fb46aacf623cd820c30 Ramon <ramon55555@gmail.com> 1783431229 +0200	commit (merge): Resolver conflicto conservando mi garaje.html
+d6a74cc1799f29e05cb44fb46aacf623cd820c30 d9a65ee0413f76bbaeced9d8a9abad76c936bf25 Ramon <ramon55555@gmail.com> 1783431641 +0200	commit: Formatear garaje.html
