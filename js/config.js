@@ -1,2 +1,2 @@
-const SUPABASE_URL="https://lmxtcxjlhwwmaylszvoa.supabase.co";
-const SUPABASE_ANON_KEY="REEMPLAZAR";
+const SUPABASE_URL = 'https://lmxtcxjlhwwmaylszvoa.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxteHRjeGpsaHd3bWF5bHN6dm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MjQ1MzgsImV4cCI6MjA5OTAwMDUzOH0.NCqn0WF_o6ZbjCXJAi3eG8WmfAkHktBR8eP2W3TEXeY';
