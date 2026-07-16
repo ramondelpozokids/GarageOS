@@ -8,9 +8,9 @@
         ];
 
         /* ══════════════════════════════════════
-           ADMIN STATE — datos completos
+           ADMIN STATE — datos completos (persistidos en localStorage)
         ══════════════════════════════════════ */
-        const ADMIN = {
+        const ADMIN_DEFAULT = {
             nombre: 'Admin', apellidos: 'García',
             role: 'Administrador Principal',
             dni: '12345678A', colegiado: 'COL-00123',
@@ -23,6 +23,27 @@
             anio: '2005', banco: '', seguro: '', notas: '',
             sysRole: 'admin', idioma: 'es'
         };
+        const ADMIN_STORAGE_KEY = 'garageos_admin_v1';
+
+        function loadAdminFromStorage() {
+            try {
+                const raw = localStorage.getItem(ADMIN_STORAGE_KEY);
+                if (!raw) return { ...ADMIN_DEFAULT };
+                return { ...ADMIN_DEFAULT, ...JSON.parse(raw) };
+            } catch {
+                return { ...ADMIN_DEFAULT };
+            }
+        }
+
+        function persistAdmin() {
+            try {
+                localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(ADMIN));
+            } catch (e) {
+                console.warn('[GarageOS] No se pudo guardar el perfil admin:', e);
+            }
+        }
+
+        const ADMIN = loadAdminFromStorage();
 
         /* ══════════════════════════════════════
            DATABASE
@@ -231,9 +252,10 @@
             ADMIN.notas = document.getElementById('adm-notas').value.trim();
             ADMIN.sysRole = document.getElementById('adm-sys-role').value;
             ADMIN.idioma = document.getElementById('adm-idioma').value;
+            persistAdmin();
             updateAdminUI();
             closeAdminModal();
-            showToast('success', 'Perfil actualizado', 'Todos los datos del administrador han sido guardados.');
+            showToast('success', 'Perfil actualizado', 'Datos del administrador guardados en este navegador.');
         }
 
         /* ══════════════════════════════════════
@@ -462,7 +484,8 @@
                 renderOwnersGrid();
                 renderKPIs();
             } catch (e) {
-                showToast('error', 'Error', 'No se pudo guardar el propietario en Supabase.');
+                const msg = (e && e.message) ? e.message : 'No se pudo guardar el propietario en Supabase.';
+                showToast('error', 'Error al guardar', msg);
             }
         }
         function confirmDeleteOwner(id) {
@@ -594,7 +617,8 @@
                 if (ST.page === 'motorcycles') renderMotosTable();
                 if (ST.page === 'spots') renderFloor(DB.spots);
             } catch (e) {
-                showToast('error', 'Error', 'No se pudo guardar el registro en Supabase.');
+                const msg = (e && e.message) ? e.message : 'No se pudo guardar el registro en Supabase.';
+                showToast('error', 'Error al guardar', msg);
             }
         }
 
@@ -649,9 +673,18 @@
                     showToast('warning', 'Esquema incompleto', 'Ejecuta supabase/schema.sql en Supabase para guardar todos los campos.');
                 }
                 await loadData();
+                showToast('success', 'Datos cargados', `${DB.spots.length} plazas · ${DB.owners.length} propietarios`);
             } catch (e) {
                 console.error('[GarageOS] init:', e);
-                showToast('error', 'Error de conexión', 'No se pudieron cargar los datos de Supabase.');
+                const msg = (e && e.message) ? e.message : '';
+                const paused = /failed to fetch|network|paused|503|504/i.test(msg);
+                showToast(
+                    'error',
+                    'Error de conexión con Supabase',
+                    paused
+                        ? 'El proyecto puede estar pausado. Restaúralo en supabase.com y recarga.'
+                        : (msg || 'No se pudieron cargar los datos.')
+                );
             }
             updateAdminUI();
             updateBadges();
@@ -661,6 +694,5 @@
             renderOwnersGrid();
             setTimeout(renderCharts, 80);
             lucide.createIcons();
-            showToast('info', 'GarageOS listo', 'Ctrl+K buscar · Ctrl+N añadir · Esc cerrar');
         }
         init();
